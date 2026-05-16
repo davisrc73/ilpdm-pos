@@ -1,0 +1,69 @@
+# =============================================================================
+# ilovepauldomar POS — PocketBase Backend
+# Target: Synology DS220+ (10GB RAM, Btrfs) via Container Manager
+# =============================================================================
+# Notas de operação:
+#   - Esta stack expõe o PocketBase APENAS em 127.0.0.1:8090.
+#   - Acesso externo deve ser feito via DSM Reverse Proxy (Control Panel →
+#     Login Portal → Advanced → Reverse Proxy), com Let's Encrypt do DSM.
+#   - O diretório ./pb_data contém a BD SQLite (WAL ativo por defeito).
+#     NUNCA copiar este diretório com o container a correr — usar a API de
+#     backup do PocketBase (scripts/backup.sh na Fase 2).
+# =============================================================================
+
+services:
+  pocketbase:
+    image: ghcr.io/muchobien/pocketbase:0.22.21
+    # ↑ Pinned version para builds reproducíveis. Atualizar conscientemente,
+    #   nunca com :latest em produção.
+
+    container_name: ilovepauldomar-pb
+    restart: unless-stopped
+
+    # --- Rede ---
+    # Bind apenas ao loopback do NAS. O DSM Reverse Proxy trata do HTTPS.
+    ports:
+      - "127.0.0.1:8090:8090"
+
+    # --- Persistência (bind mounts → visíveis ao Hyper Backup) ---
+    volumes:
+      - ./pb_data:/pb_data
+      - ./pb_migrations:/pb_migrations
+      - ./pb_hooks:/pb_hooks
+      - ./pb_public:/pb_public
+
+    # --- Configuração via env ---
+    environment:
+      - TZ=${TZ:-Europe/Lisbon}
+      # ENCRYPTION_KEY: chave para encriptar settings no SQLite.
+      # Gerar com: openssl rand -hex 32
+      - ENCRYPTION=${PB_ENCRYPTION_KEY}
+
+    # --- Healthcheck ---
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://127.0.0.1:8090/api/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
+    # --- Limites de recursos (proteção do NAS) ---
+    mem_limit: 512m
+    mem_reservation: 128m
+    cpus: 1.0
+
+    # --- Logging com rotação (evita encher o disco do DSM) ---
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "5"
+
+    # --- Hardening básico ---
+    security_opt:
+      - no-new-privileges:true
+
+# =============================================================================
+# Não declaramos `networks:` — usar a default bridge é suficiente para
+# um único container e mais leve que criar rede dedicada.
+# =============================================================================

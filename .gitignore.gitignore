@@ -1,0 +1,49 @@
+# =============================================================================
+# ilovepauldomar POS — Git Ignore
+# =============================================================================
+
+# --- Segredos e ambiente ---
+.env
+.env.local
+.env.*.local
+*.key
+*.pem
+
+# --- PocketBase: dados e binários, NUNCA versionar ---
+# (As migrations e hooks SIM são versionadas — ver abaixo)
+backend/pb_data/
+!backend/pb_data/.gitkeep
+
+# Backups locais (Hyper Backup trata do off-site)
+backend/backups/
+*.zip
+
+# --- Node / Frontend ---
+node_modules/
+dist/
+build/
+.next/
+out/
+.vite/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# --- IDE ---
+.vscode/*
+!.vscode/settings.json
+!.vscode/extensions.json
+.idea/
+*.swp
+*.swo
+
+# --- OS ---
+.DS_Store
+Thumbs.db
+@eaDir/
+
+# --- Logs ---
+logs/
+*.log
