@@ -3,7 +3,7 @@
 # Target: Synology DS220+ (10GB RAM, Btrfs) via Container Manager
 # =============================================================================
 # Notas de operação:
-#   - Esta stack expõe o PocketBase APENAS em 127.0.0.1:8090.
+#   - Esta stack expõe o PocketBase APENAS em 127.0.0.1:${PB_HOST_PORT}.
 #   - Acesso externo deve ser feito via DSM Reverse Proxy (Control Panel →
 #     Login Portal → Advanced → Reverse Proxy), com Let's Encrypt do DSM.
 #   - O diretório ./pb_data contém a BD SQLite (WAL ativo por defeito).
@@ -23,8 +23,12 @@ services:
 
     # --- Rede ---
     # Bind apenas ao loopback do NAS. O DSM Reverse Proxy trata do HTTPS.
+    # A porta do host é parametrizada por ambiente via PB_HOST_PORT no .env:
+    #   - Local (Mac):    PB_HOST_PORT=8090
+    #   - NAS (DS220+):   PB_HOST_PORT=8095  (8090 ocupada por outro projeto)
+    # A porta interna do container é sempre 8090 (default do PocketBase).
     ports:
-      - "127.0.0.1:8090:8090"
+      - "127.0.0.1:${PB_HOST_PORT:-8090}:8090"
 
     # --- Persistência (bind mounts → visíveis ao Hyper Backup) ---
     volumes:
@@ -44,6 +48,7 @@ services:
 
     # --- Healthcheck ---
     # wget vem do busybox em todas as imagens alpine recentes.
+    # O healthcheck corre DENTRO do container, por isso usa sempre 8090.
     healthcheck:
       test: ["CMD", "wget", "--spider", "-q", "http://127.0.0.1:8090/api/health"]
       interval: 30s
