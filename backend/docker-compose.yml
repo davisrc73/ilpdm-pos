@@ -13,9 +13,10 @@
 
 services:
   pocketbase:
-    image: ghcr.io/muchobien/pocketbase:0.22.21
+    image: ghcr.io/muchobien/pocketbase:0.34.2
     # ↑ Pinned version para builds reproducíveis. Atualizar conscientemente,
-    #   nunca com :latest em produção.
+    #   nunca com :latest em produção. Série 0.34 traz a sintaxe JSVM moderna
+    #   (onRecordCreate, onRecordCreateRequest, e.next(), $app sem dao()).
 
     container_name: ilovepauldomar-pb
     restart: unless-stopped
@@ -33,13 +34,16 @@ services:
       - ./pb_public:/pb_public
 
     # --- Configuração via env ---
+    # A imagem muchobien lê ENCRYPTION e passa-a ao binário com --encryptionEnv.
     environment:
       - TZ=${TZ:-Europe/Lisbon}
-      # ENCRYPTION_KEY: chave para encriptar settings no SQLite.
+      # ENCRYPTION: chave (hex 32 bytes) para encriptar settings sensíveis
+      # no SQLite (SMTP password, OAuth secrets, S3 keys, etc).
       # Gerar com: openssl rand -hex 32
       - ENCRYPTION=${PB_ENCRYPTION_KEY}
 
     # --- Healthcheck ---
+    # wget vem do busybox em todas as imagens alpine recentes.
     healthcheck:
       test: ["CMD", "wget", "--spider", "-q", "http://127.0.0.1:8090/api/health"]
       interval: 30s
