@@ -57,9 +57,17 @@ services:
       start_period: 10s
 
     # --- Limites de recursos (proteção do NAS) ---
+    # mem_limit e mem_reservation: protegem o NAS de OOM se o PocketBase
+    #   tiver fuga de memória. Valores conservadores — PB típico usa 30-80MB.
     mem_limit: 512m
     mem_reservation: 128m
-    cpus: 1.0
+    # cpus: DESATIVADO no DS220+ por incompatibilidade com o kernel do DSM 7.x
+    #   (ARM Realtek RTD1296 sem CPU CFS scheduler).
+    #   Erro observado:
+    #     "NanoCPUs can not be set, as your kernel does not support CPU CFS
+    #      scheduler or the cgroup is not mounted"
+    #   Limite de RAM acima já dá proteção suficiente.
+    # cpus: 1.0
 
     # --- Logging com rotação (evita encher o disco do DSM) ---
     logging:
